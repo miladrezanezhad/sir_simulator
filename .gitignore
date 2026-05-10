@@ -1,27 +1,69 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*$py.class
 *.so
-.Python
+*.pyd
 
-# Virtual Environment
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+*.egg
+MANIFEST
+
+# Coverage
+.coverage
+.coverage.*
+.coverage.lcov
+coverage_html_report/
+htmlcov/
+.coverage.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Virtual environments
 venv/
 env/
+.env/
+.venv/
 ENV/
 
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
-
-# Outputs
-outputs/
-*.csv
-*.log
-
-# Streamlit
-.streamlit/
-
-# OS
+*.swo
+*~
 .DS_Store
-Thumbs.db
+
+# Output files (CSV results)
+*.csv
+result.csv
+simulation_output.csv
+sir_output.csv
+outputs/
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# Streamlit (local)
+.streamlit/secrets.toml
+
+# Project specific
+.coverage
+coverage_html_report/
