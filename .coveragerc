@@ -1,0 +1,37 @@
+[run]
+source = core_models, advanced_features, user_interface
+omit =
+    tests/*
+    tests/security/*
+    */__pycache__/*
+    */.git/*
+    */venv/*
+    */site-packages/*
+    config/*
+    docs/*
+    outputs/*
+    screenshots/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    raise AssertionError
+    raise NotImplementedError
+    pass
+
+    # Debug-only code
+    if DEBUG:
+    if self.debug:
+
+    # Escape hatches
+    except ImportError:
+    except Exception:
+
+[html]
+directory = coverage_html_report
+title = SIR Simulator Test Coverage Report
+
+[xml]
+output = coverage.xml

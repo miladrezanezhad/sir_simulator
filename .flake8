@@ -1,0 +1,9 @@
+[flake8]
+max-line-length = 88
+extend-ignore = E203, W503
+exclude = .git, __pycache__, venv, .venv, build, dist
+max-complexity = 10
+per-file-ignores =
+    tests/*: S101
+    tests/security/*: S101
+docstring-convention = google
