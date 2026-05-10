@@ -33,6 +33,26 @@
 
 The **SIR Epidemic Simulator** is a comprehensive epidemic modeling toolkit combining classical compartmental models with modern machine learning.
 
+---
+
+## 📸 Screenshots
+
+| SIR Model | SEIR Model |
+|:---:|:---:|
+| ![SIR](screenshots/SIR%20Epidemic%20Model.png) | ![SEIR](screenshots/SEIR%20Model%20with%20Exposed%20Compartment.png) |
+
+| Network Simulation | Parameter Optimization |
+|:---:|:---:|
+| ![Network](screenshots/Fake%20News%20Spread%20on%20Social%20Network.png) | ![Optimization](screenshots/Parameter%20Optimization.png) |
+
+| ML Prediction | Scenario Comparison |
+|:---:|:---:|
+| ![ML](screenshots/Machine%20Learning%20Prediction.png) | ![Scenarios](screenshots/Scenario%20Comparison.png) |
+
+### 📊 Streamlit Dashboard
+![Dashboard](screenshots/dashboard.png)
+---
+
 ### Key Capabilities
 
 | Feature | Description |
@@ -66,6 +86,7 @@ python -c "import streamlit, numpy, pandas; print('✅ Success!')"
 ```
 
 ---
+
 
 ## 🎮 Quick Start
 
