@@ -55,7 +55,7 @@ The **SIR Epidemic Simulator** is a comprehensive epidemic modeling toolkit comb
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/sir_simulator.git
+git clone https://github.com/miladrezanezhad/sir_simulator.git
 cd sir_simulator
 
 # Install dependencies
