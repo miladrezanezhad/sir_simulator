@@ -46,10 +46,8 @@ def run_sir_simulation(beta, gamma, S0, I0, R0, t_max, steps):
     t = np.linspace(0, t_max, steps)
     y0 = [S0, I0, R0]
     
-    # Solve ODE system
     result = odeint(sir_equations, y0, t, args=(beta, gamma))
     
-    # Create DataFrame
     df = pd.DataFrame({
         'time': t,
         'Susceptible': result[:, 0],
@@ -68,3 +66,10 @@ def calculate_peak_infected(df):
     max_infected = df['Infected'].max()
     peak_time = df[df['Infected'] == max_infected]['time'].values[0]
     return max_infected, peak_time
+
+if __name__ == "__main__":
+    # Quick test
+    df = run_sir_simulation(0.5, 0.2, 990, 10, 0, 100, 500)
+    print(df.head())
+    print(f"R₀ = {calculate_R0(0.5, 0.2):.2f}")
+    print(f"Peak infected: {calculate_peak_infected(df)[0]:.0f}")
