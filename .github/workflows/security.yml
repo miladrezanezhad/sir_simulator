@@ -1,0 +1,168 @@
+name: Security Scan Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 0 * * 0'  # Run every Sunday at midnight
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # ============================================================
+  # SECURITY TESTS with Bandit (SAST)
+  # ============================================================
+  bandit-sast:
+    name: Bandit - Static Application Security Testing
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Install bandit
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit
+    
+    - name: Run Bandit security scan
+      run: |
+        bandit -r . -f json -o bandit-report.json || true
+        bandit -r . -f html -o bandit-report.html || true
+      continue-on-error: true
+    
+    - name: Upload Bandit report
+      uses: actions/upload-artifact@v4
+      with:
+        name: bandit-security-report
+        path: |
+          bandit-report.json
+          bandit-report.html
+        retention-days: 30
+
+  # ============================================================
+  # SECURITY TESTS with Safety (Dependency scan)
+  # ============================================================
+  safety-deps:
+    name: Safety - Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Install safety
+      run: |
+        python -m pip install --upgrade pip
+        pip install safety
+    
+    - name: Run safety check
+      run: |
+        if [ -f requirements_full.txt ]; then
+          safety check -r requirements_full.txt --full-report
+        elif [ -f requirements.txt ]; then
+          safety check -r requirements.txt --full-report
+        else
+          echo "No requirements file found"
+        fi
+
+  # ============================================================
+  # UNIT SECURITY TESTS (Custom test suite)
+  # ============================================================
+  unit-security-tests:
+    name: Unit Security Tests (DoS, Memory, Unicode, XSS)
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install numpy scipy pandas matplotlib networkx scikit-learn
+        if [ -f requirements_full.txt ]; then pip install -r requirements_full.txt; fi
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Run security test suite
+      run: |
+        python -m unittest discover tests/security -v
+    
+    - name: Upload test results if failed
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-test-results-python${{ matrix.python-version }}
+        path: |
+          .pytest_cache
+          __pycache__
+        retention-days: 7
+
+  # ============================================================
+  # SECRETS SCAN with TruffleHog (optional)
+  # ============================================================
+  secrets-scan:
+    name: Secrets - Scan for exposed secrets
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Won't fail the build
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Run TruffleHog (secrets scanner)
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: ${{ github.event.repository.default_branch }}
+        head: ${{ github.sha }}
+
+  # ============================================================
+  # SUMMARY REPORT
+  # ============================================================
+  security-summary:
+    name: Security Scan Summary
+    runs-on: ubuntu-latest
+    needs: [bandit-sast, safety-deps, unit-security-tests, secrets-scan]
+    if: always()
+    
+    steps:
+    - name: Show summary
+      run: |
+        echo "========================================="
+        echo "🔒 SECURITY SCAN COMPLETE"
+        echo "========================================="
+        echo ""
+        echo "✅ Bandit SAST: ${{ needs.bandit-sast.result }}"
+        echo "✅ Safety Dependencies: ${{ needs.safety-deps.result }}"
+        echo "✅ Unit Security Tests: ${{ needs.unit-security-tests.result }}"
+        echo "✅ Secrets Scan: ${{ needs.secrets-scan.result }}"
+        echo ""
+        echo "📊 Full reports available in artifacts"
+        echo "========================================="
