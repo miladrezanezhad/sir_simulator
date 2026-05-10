@@ -1,56 +1,36 @@
 #!/usr/bin/env python3
 """
-Run all tests for the SIR Simulator
+Run all test suites for SIR Epidemic Simulator
 """
 
-import subprocess
+import unittest
 import sys
 import os
 
-def run_test(test_file):
-    print(f"\n{'='*60}")
-    print(f"Running: {test_file}")
-    print('='*60)
-    result = subprocess.run([sys.executable, test_file], capture_output=False, text=True)
-    return result.returncode == 0
-
-def main():
+def run_all_tests():
+    """Discover and run all tests in the tests directory"""
+    
+    # Add project root to path
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    
+    # Discover all tests
+    test_loader = unittest.TestLoader()
+    test_suite = test_loader.discover(start_dir='tests', pattern='test_*.py')
+    
+    # Run tests with verbosity
+    test_runner = unittest.TextTestRunner(verbosity=2)
+    result = test_runner.run(test_suite)
+    
+    # Print summary
     print("\n" + "="*60)
-    print("🧪 SIR SIMULATOR - COMPLETE TEST SUITE")
+    print(f"✅ Tests Run: {result.testsRun}")
+    print(f"✅ Successes: {result.testsRun - len(result.failures) - len(result.errors)}")
+    print(f"❌ Failures: {len(result.failures)}")
+    print(f"⚠️ Errors: {len(result.errors)}")
     print("="*60)
     
-    tests = [
-        "tests/test_seir.py",
-        "tests/test_network.py",
-        "tests/test_optimization.py",
-        "tests/test_ml.py",
-        "tests/test_scenarios.py"
-    ]
-    
-    results = {}
-    for test_file in tests:
-        if os.path.exists(test_file):
-            success = run_test(test_file)
-            results[test_file] = success
-            if not success:
-                print(f"\n❌ Stopped at: {test_file}")
-                break
-        else:
-            print(f"⚠️ File not found: {test_file}")
-            results[test_file] = False
-    
-    print("\n" + "="*60)
-    print("📊 SUMMARY")
-    print("="*60)
-    
-    all_passed = all(results.values())
-    for test, passed in results.items():
-        print(f"{'✅' if passed else '❌'} {test}")
-    
-    if all_passed:
-        print("\n🎉 ALL TESTS PASSED!")
-    else:
-        print("\n⚠️ SOME TESTS FAILED!")
+    # Return exit code (0 for success, 1 for failures)
+    return 0 if result.wasSuccessful() else 1
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    sys.exit(run_all_tests())

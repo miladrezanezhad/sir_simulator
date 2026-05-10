@@ -1,0 +1,51 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+
+jobs:
+  test:
+    name: Test with Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, 3.10, 3.11]
+      fail-fast: false  # Don't cancel other jobs if one fails
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install numpy scipy pandas matplotlib networkx scikit-learn
+        if [ -f requirements_full.txt ]; then pip install -r requirements_full.txt; fi
+    
+    - name: Verify installation
+      run: |
+        python -c "import numpy, scipy, pandas, matplotlib, networkx, sklearn; print('✅ All dependencies installed')"
+    
+    - name: Run all tests
+      run: |
+        python run_all_tests.py
+    
+    - name: Upload test results (if failed)
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-python${{ matrix.python-version }}
+        path: |
+          *.log
+          test_output.txt
+        retention-days: 7
