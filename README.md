@@ -3,11 +3,11 @@
 
 <div align="center">
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.20+-red.svg)](https://streamlit.io)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Machine Learning](https://img.shields.io/badge/ML-Scikit--Learn-orange.svg)](https://scikit-learn.org)
-[![NetworkX](https://img.shields.io/badge/NetworkX-Graphs-purple.svg)](https://networkx.org)
+![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Tests](https://img.shields.io/badge/tests-25%2B-brightgreen)
+![Streamlit](https://img.shields.io/badge/streamlit-app-red)
+![Platform](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey)
 
 **A Complete Epidemic Modeling Suite with 5 Integrated Features**
 
