@@ -1,4 +1,14 @@
+<div align="center">
+
+<img src="image.png" alt="Web Security Scanner Pro">
+
 # 🦠 SIR Epidemic Simulator
+
+Advanced Open Source SIR Epidemic Simulator
+
+</div>
+
+
 
 [![PyPI version](https://badge.fury.io/py/sir-epidemic.svg)](https://pypi.org/project/sir-epidemic/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/sir-epidemic)](https://pypi.org/project/sir-epidemic/)
