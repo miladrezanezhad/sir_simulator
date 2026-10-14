@@ -9,7 +9,11 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from sir_simulator.advanced_features.parameter_optimization import ParameterOptimizer
+from sir_simulator.advanced_features.ml_prediction import EpidemicPredictor
+from sir_simulator.advanced_features.parameter_optimization import (
+    ParameterOptimizer,
+    generate_synthetic_data,
+)
 from sir_simulator.advanced_features.scenario_comparison import ScenarioComparator
 from sir_simulator.core_models.network_model import SocialNetworkSimulator
 from sir_simulator.core_models.seir_model import run_seir_simulation
@@ -63,6 +67,7 @@ model_type = st.sidebar.selectbox(
         "🧬 SEIR Model",
         "🌐 Network Simulation",
         "🎯 Parameter Optimization",
+        "🤖 ML Prediction",
         "⚖️ Scenario Comparison",
     ],
 )
@@ -193,10 +198,11 @@ if model_type == "📈 SIR Model":
             # Metrics
             st.markdown("### 📊 Key Metrics")
             col1, col2, col3, col4 = st.columns(4)
+            peak_time = df.loc[df["Infected"].idxmax(), "time"]
             with col1:
                 st.metric("🔴 Peak Infected", f"{int(df['Infected'].max()):,}")
             with col2:
-                st.metric("📅 Peak Day", f"{int(df['Infected'].idxmax())}")
+                st.metric("📅 Peak Day", f"{peak_time:.1f}")
             with col3:
                 st.metric("📈 Final R₀", f"{beta/gamma:.2f}")
             with col4:
@@ -422,33 +428,53 @@ elif model_type == "🎯 Parameter Optimization":
     if st.button("🎯 Optimize Parameters", type="primary", use_container_width=True):
         with st.spinner("🔍 Optimizing parameters..."):
             if use_synthetic:
-                from sir_simulator.advanced_features.parameter_optimization import (
-                    generate_synthetic_data,
-                )
-
                 t = np.linspace(0, 100, 100)
                 t, observed, true = generate_synthetic_data(noise_level=5)
                 st.success("✅ Using synthetic data")
             elif uploaded_file is not None:
                 df = pd.read_csv(uploaded_file)
+                if "cases" not in df.columns:
+                    st.error("Uploaded CSV must contain a 'cases' column.")
+                    st.stop()
                 observed = df["cases"].values
                 t = (
                     df["day"].values
                     if "day" in df.columns
                     else np.arange(len(observed))
                 )
+            else:
+                st.error("⚠️ Please upload a CSV file or check 'Use synthetic data'.")
+                st.stop()
 
-            optimizer = ParameterOptimizer(model_type="sir")
-            results = optimizer.fit(observed, t, [990, 10, 0])
+            selected_model = model_type_opt.lower()
+            optimizer = ParameterOptimizer(model_type=selected_model)
+            initial_conditions = [990, 5, 5, 0] if selected_model == "seir" else [990, 10, 0]
+            results = optimizer.fit(observed, t, initial_conditions)
 
             st.markdown("### 📊 Optimization Results")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("🦠 β (Infection Rate)", f"{results['beta']:.4f}")
-            with col2:
-                st.metric("💊 γ (Recovery Rate)", f"{results['gamma']:.4f}")
-            with col3:
-                st.metric("📈 R₀", f"{results['R0']:.4f}")
+            if selected_model == "sir":
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("🦠 β (Infection Rate)", f"{results['beta']:.4f}")
+                with col2:
+                    st.metric("💊 γ (Recovery Rate)", f"{results['gamma']:.4f}")
+                with col3:
+                    st.metric("📈 R₀", f"{results['R0']:.4f}")
+            else:
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("🦠 β (Infection Rate)", f"{results['beta']:.4f}")
+                with col2:
+                    st.metric("⏱️ σ (Incubation Rate)", f"{results['sigma']:.4f}")
+                with col3:
+                    st.metric("💊 γ (Recovery Rate)", f"{results['gamma']:.4f}")
+                col4, col5, col6 = st.columns(3)
+                with col4:
+                    st.metric("📈 R₀", f"{results['R0']:.4f}")
+                with col5:
+                    st.metric("⏳ Incubation Period", f"{results['incubation_period']:.1f} days")
+                with col6:
+                    st.metric("🩺 Infectious Period", f"{results['infectious_period']:.1f} days")
 
             st.metric("⭐ R² (Goodness of Fit)", f"{results['r_squared']:.4f}")
 
@@ -462,11 +488,152 @@ elif model_type == "🎯 Parameter Optimization":
             ax.set_xlabel("📅 Time", fontsize=12)
             ax.set_ylabel("🦠 Infected Cases", fontsize=12)
             ax.set_title(
-                "🎯 Parameter Optimization Results", fontsize=14, fontweight="bold"
+                f"🎯 Parameter Optimization Results ({model_type_opt})",
+                fontsize=14,
+                fontweight="bold",
             )
             ax.legend()
             ax.grid(True, alpha=0.3)
             st.pyplot(fig)
+
+# ============================================================================
+# ML PREDICTION
+# ============================================================================
+elif model_type == "🤖 ML Prediction":
+    st.markdown("## 🤖 Machine Learning Epidemic Forecasting")
+    st.markdown("🔮 Forecast future epidemic cases using Random Forest or XGBoost")
+    st.markdown("---")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("### ⚙️ Model Settings")
+        ml_model_choice = st.selectbox(
+            "🧠 Algorithm",
+            ["random_forest", "xgboost"],
+            format_func=lambda x: "Random Forest" if x == "random_forest" else "XGBoost",
+            help="Select regression model for time-series forecasting",
+        )
+        forecast_days = st.slider(
+            "🔮 Forecast Horizon (days)",
+            7,
+            60,
+            30,
+            help="Number of future days to predict",
+        )
+        test_size = st.slider(
+            "📊 Test Set Size",
+            0.1,
+            0.4,
+            0.2,
+            0.05,
+            help="Proportion of historical data used for model evaluation",
+        )
+
+    with col2:
+        st.markdown("### 📁 Data Source")
+        use_sample_ml = st.checkbox("🔄 Use sample epidemic data", value=True)
+        uploaded_ml_file = None
+        if not use_sample_ml:
+            uploaded_ml_file = st.file_uploader(
+                "📁 Upload Cases CSV", type=["csv"], key="ml_file_uploader"
+            )
+            st.caption("CSV should contain 'day' and 'cases' columns (at least 15 rows)")
+
+    if st.button("🚀 Train & Forecast", type="primary", use_container_width=True):
+        with st.spinner("🤖 Training model and generating forecasts..."):
+            try:
+                if use_sample_ml:
+                    np.random.seed(42)
+                    days = 100
+                    cases = 10 + np.cumsum(np.random.poisson(0.5, days))
+                    df_ml = pd.DataFrame({"day": range(1, days + 1), "cases": cases})
+                elif uploaded_ml_file is not None:
+                    df_ml = pd.read_csv(uploaded_ml_file)
+                    if "cases" not in df_ml.columns:
+                        st.error("Uploaded CSV must contain a 'cases' column.")
+                        st.stop()
+                    if "day" not in df_ml.columns:
+                        df_ml["day"] = range(1, len(df_ml) + 1)
+                else:
+                    st.error("⚠️ Please upload a CSV file or check 'Use sample epidemic data'.")
+                    st.stop()
+
+                predictor = EpidemicPredictor(model_type=ml_model_choice)
+                metrics, y_pred, model = predictor.train(df_ml, test_size=test_size)
+                future_preds = predictor.predict_future(df_ml, days=forecast_days)
+
+                st.markdown("### 📊 Model Performance")
+                m_col1, m_col2, m_col3, m_col4 = st.columns(4)
+                with m_col1:
+                    st.metric("⭐ R² Score", f"{metrics['r2']:.4f}")
+                with m_col2:
+                    st.metric("📉 RMSE", f"{metrics['rmse']:.2f}")
+                with m_col3:
+                    st.metric("🏋️ Train Size", metrics["train_size"])
+                with m_col4:
+                    st.metric("🧪 Test Size", metrics["test_size"])
+
+                # Plot
+                last_day = df_ml["day"].iloc[-1]
+                future_days = np.arange(last_day + 1, last_day + 1 + forecast_days)
+
+                fig, ax = plt.subplots(figsize=(12, 6))
+                ax.plot(
+                    df_ml["day"],
+                    df_ml["cases"],
+                    label="📊 Historical Cases",
+                    color="#3498db",
+                    linewidth=2,
+                )
+                ax.plot(
+                    future_days,
+                    future_preds.values,
+                    label="🔮 Forecast",
+                    color="#e74c3c",
+                    linestyle="--",
+                    linewidth=2.5,
+                )
+                ax.fill_between(
+                    future_days,
+                    0,
+                    future_preds.values,
+                    alpha=0.15,
+                    color="#e74c3c",
+                )
+                ax.axvline(
+                    x=last_day,
+                    color="#7f8c8d",
+                    linestyle=":",
+                    label="Today / Forecast Start",
+                )
+                ax.set_xlabel("📅 Day", fontsize=12)
+                ax.set_ylabel("🦠 Cases", fontsize=12)
+                ax.set_title(
+                    f"🤖 Machine Learning Epidemic Forecast ({ml_model_choice.replace('_', ' ').title()})",
+                    fontsize=14,
+                    fontweight="bold",
+                )
+                ax.legend(loc="upper left", fontsize=11)
+                ax.grid(True, alpha=0.3)
+                ax.set_facecolor("#f8f9fa")
+                st.pyplot(fig)
+
+                # Future predictions preview
+                forecast_df = pd.DataFrame(
+                    {"day": future_days, "predicted_cases": np.round(future_preds.values, 1)}
+                )
+                with st.expander("📋 View Forecast Data"):
+                    st.dataframe(forecast_df)
+                    csv_forecast = forecast_df.to_csv(index=False)
+                    st.download_button(
+                        "💾 Download Forecast CSV",
+                        csv_forecast,
+                        "ml_forecast.csv",
+                        "text/csv",
+                    )
+            except Exception as e:
+                st.error(f"❌ An error occurred during training/prediction: {e}")
 
 # ============================================================================
 # SCENARIO COMPARISON

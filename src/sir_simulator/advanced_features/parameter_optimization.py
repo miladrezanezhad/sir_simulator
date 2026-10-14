@@ -41,28 +41,29 @@ class ParameterOptimizer:
 
     def cost_function(self, params, t, real_data, initial_conditions):
         """Calculate error between simulation and real data"""
+        if self.model_type == "sir":
+            beta, gamma = params
+            if beta < 0 or gamma < 0 or beta > 2 or gamma > 1:
+                return 1e10
+        else:
+            beta, sigma, gamma = params
+            if (
+                beta < 0
+                or sigma < 0
+                or gamma < 0
+                or beta > 2
+                or sigma > 1
+                or gamma > 1
+            ):
+                return 1e10
+
         try:
             simulated = self.simulate(params, t, initial_conditions)
-            mse = np.mean((simulated - real_data) ** 2)
-
-            if self.model_type == "sir":
-                beta, gamma = params
-                if beta < 0 or gamma < 0 or beta > 2 or gamma > 1:
-                    return 1e10
-            else:
-                beta, sigma, gamma = params
-                if (
-                    beta < 0
-                    or sigma < 0
-                    or gamma < 0
-                    or beta > 2
-                    or sigma > 1
-                    or gamma > 1
-                ):
-                    return 1e10
-
+            if np.any(np.isnan(simulated)) or np.any(np.isinf(simulated)):
+                return 1e10
+            mse = float(np.mean((simulated - real_data) ** 2))
             return mse
-        except:
+        except Exception:
             return 1e10
 
     def fit(self, real_data, t, initial_conditions, method="differential_evolution"):
@@ -98,7 +99,7 @@ class ParameterOptimizer:
 
         ss_res = np.sum((real_data - fitted_curve) ** 2)
         ss_tot = np.sum((real_data - np.mean(real_data)) ** 2)
-        r_squared = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0
+        r_squared = max(0.0, 1 - (ss_res / ss_tot)) if ss_tot > 0 else 0.0
 
         if self.model_type == "sir":
             results = {

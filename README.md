@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="image.png" alt="Web Security Scanner Pro">
+<img src="image.png" alt="SIR Epidemic Simulator">
 
 # 🦠 SIR Epidemic Simulator
 

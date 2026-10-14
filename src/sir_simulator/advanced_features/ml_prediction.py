@@ -113,7 +113,7 @@ class EpidemicPredictor:
             raise ValueError(f"Need at least 10 data points, got {len(X)}")
 
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=42
+            X, y, test_size=test_size, shuffle=False
         )
 
         self.model.fit(X_train, y_train)
@@ -153,32 +153,32 @@ class EpidemicPredictor:
             feature_cols = [
                 col for col in current_row.columns if col not in ["cases", "day"]
             ]
-            pred = self.model.predict(current_row[feature_cols])[0]
+            pred = float(self.model.predict(current_row[feature_cols])[0])
+            pred = max(0.0, pred)  # Cases cannot be negative
             future_predictions.append(pred)
 
             # Update current row for next prediction
             current_row["cases"] = pred
-            current_row["day"] = current_row["day"].values[0] + 1
+            current_day = int(current_row["day"].values[0]) + 1
+            current_row["day"] = current_day
+            current_row["day_of_week"] = current_day % 7
+            current_row["week"] = current_day // 7
 
             # Update lag features
             for lag in range(7, 1, -1):
                 if f"lag_{lag-1}" in current_row.columns:
-                    current_row[f"lag_{lag}"] = current_row[f"lag_{lag-1}"]
+                    current_row[f"lag_{lag}"] = current_row[f"lag_{lag-1}"].values[0]
             current_row["lag_1"] = pred
 
             # Update rolling averages
-            current_row["rolling_mean_3"] = (
-                pred + current_row.get("lag_1", pred) + current_row.get("lag_2", pred)
-            ) / 3
-            current_row["rolling_mean_7"] = (
-                pred
-                + current_row.get("lag_1", pred)
-                + current_row.get("lag_2", pred)
-                + current_row.get("lag_3", pred)
-                + current_row.get("lag_4", pred)
-                + current_row.get("lag_5", pred)
-                + current_row.get("lag_6", pred)
-            ) / 7
+            lag_vals = [
+                current_row[f"lag_{i}"].values[0]
+                if f"lag_{i}" in current_row.columns
+                else pred
+                for i in range(1, 7)
+            ]
+            current_row["rolling_mean_3"] = (pred + lag_vals[0] + lag_vals[1]) / 3
+            current_row["rolling_mean_7"] = (pred + sum(lag_vals)) / 7
 
         return pd.Series(future_predictions, name="predictions")
 
