@@ -11,10 +11,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 - Real-time data integration from WHO/CDC APIs
-- More complex network topologies (hierarchical, community-based)
-- Interactive parameter tuning with sliders
-- Export simulations to JSON format
-- Multi-language support (Persian, Spanish, French)
+- Interactive parameter tuning with real-time graph updates
+- Multi-language UI support
+
+---
+
+## [1.1.0] - 2026-10-15
+
+### ✨ Added
+- **SEIRD Model**: New compartmental model with mortality dynamics (`seird_model.py`), tracking Susceptible, Exposed, Infected, Recovered, and Deceased populations.
+- **SIRS Model**: New model with waning immunity (`sirs_model.py`) supporting cyclical outbreaks and endemic steady-state analyses.
+- **ML Prediction in Streamlit Dashboard**: Complete interactive UI for Random Forest and XGBoost time-series forecasting with performance metrics ($R^2$, RMSE) and forecast exports.
+- **Streamlit Caching**: Added `@st.cache_data` decorators to eliminate redundant simulation recalculations.
+- **Docker & Docker Compose**: Added containerization support with production-ready `Dockerfile` and `docker-compose.yml`.
+- **New Unit & Security Tests**: Added `test_seird.py`, `test_sirs.py`, and `test_input_validation.py`.
+- **Python 3.11 Support**: Re-enabled and verified Python 3.11 in GitHub Actions CI/CD workflows.
+
+### 🐛 Fixed
+- **Peak Day Calculation in UI**: Fixed calculation bug where row indices were reported instead of actual simulation time points.
+- **SEIR Parameter Optimization in Streamlit**: Fixed bug where optimization was hardcoded to SIR and ignored user's SEIR selection.
+- **CSV Upload Error Handling**: Resolved `UnboundLocalError` when optimizing parameters without an uploaded CSV file.
+- **Data Leakage in ML Forecasting**: Switched from random shuffle `train_test_split` to sequential time-series splitting (`shuffle=False`).
+- **Autoregressive Feature Loop**: Fixed frozen `day_of_week` and `week` features in `predict_future` autoregressive loop.
+- **Optimization Parameter Boundary Check**: Bounds checking is now enforced prior to ODE solver execution to prevent invalid parameter crashes.
+- **Division by Zero Protection**: Hardened ODE equations against $N \le 0$ edge cases.
+- **CI/CD Dependency Path**: Fixed missing `requirements_full.txt` reference in GitHub Actions workflows.
+- **README Alt Text Typo**: Corrected image alt text from "Web Security Scanner Pro" to "SIR Epidemic Simulator".
 
 ---
 

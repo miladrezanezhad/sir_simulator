@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  simulator:
+    build: .
+    container_name: sir_epidemic_simulator
+    ports:
+      - "8501:8501"
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1

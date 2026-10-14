@@ -12,8 +12,11 @@ from scipy.integrate import odeint
 def sir_equations(y, t, beta, gamma):
     """SIR differential equations"""
     S, I, R = y
-    dSdt = -beta * S * I / (S + I + R)
-    dIdt = beta * S * I / (S + I + R) - gamma * I
+    N = S + I + R
+    if N <= 0:
+        return [0.0, 0.0, 0.0]
+    dSdt = -beta * S * I / N
+    dIdt = beta * S * I / N - gamma * I
     dRdt = gamma * I
     return [dSdt, dIdt, dRdt]
 

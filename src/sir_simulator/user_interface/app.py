@@ -17,7 +17,25 @@ from sir_simulator.advanced_features.parameter_optimization import (
 from sir_simulator.advanced_features.scenario_comparison import ScenarioComparator
 from sir_simulator.core_models.network_model import SocialNetworkSimulator
 from sir_simulator.core_models.seir_model import run_seir_simulation
+from sir_simulator.core_models.seird_model import run_seird_simulation
 from sir_simulator.core_models.sir_model import run_sir_simulation
+from sir_simulator.core_models.sirs_model import run_sirs_simulation
+
+@st.cache_data
+def cached_sir_simulation(beta, gamma, S0, I0, R0, t_max, steps):
+    return run_sir_simulation(beta, gamma, S0, I0, R0, t_max, steps)
+
+@st.cache_data
+def cached_seir_simulation(beta, sigma, gamma, S0, E0, I0, R0, t_max, steps):
+    return run_seir_simulation(beta, sigma, gamma, S0, E0, I0, R0, t_max, steps)
+
+@st.cache_data
+def cached_seird_simulation(beta, sigma, gamma, mu, S0, E0, I0, R0, D0, t_max, steps):
+    return run_seird_simulation(beta, sigma, gamma, mu, S0, E0, I0, R0, D0, t_max, steps)
+
+@st.cache_data
+def cached_sirs_simulation(beta, gamma, xi, S0, I0, R0, t_max, steps):
+    return run_sirs_simulation(beta, gamma, xi, S0, I0, R0, t_max, steps)
 
 # Page configuration
 st.set_page_config(
@@ -65,6 +83,8 @@ model_type = st.sidebar.selectbox(
     [
         "📈 SIR Model",
         "🧬 SEIR Model",
+        "⚰️ SEIRD Model",
+        "🔄 SIRS Model",
         "🌐 Network Simulation",
         "🎯 Parameter Optimization",
         "🤖 ML Prediction",
@@ -159,7 +179,7 @@ if model_type == "📈 SIR Model":
 
     if st.button("🚀 Run SIR Simulation", type="primary", use_container_width=True):
         with st.spinner("🔄 Running simulation..."):
-            df = run_sir_simulation(beta, gamma, S0, I0, R0, t_max, steps)
+            df = cached_sir_simulation(beta, gamma, S0, I0, R0, t_max, steps)
 
             # Plot
             fig, ax = plt.subplots(figsize=(12, 6))
@@ -253,7 +273,7 @@ elif model_type == "🧬 SEIR Model":
 
     if st.button("🧬 Run SEIR Simulation", type="primary", use_container_width=True):
         with st.spinner("🔄 Running simulation..."):
-            df = run_seir_simulation(beta, sigma, gamma, S0, E0, I0, 0, t_max, steps)
+            df = cached_seir_simulation(beta, sigma, gamma, S0, E0, I0, 0, t_max, steps)
 
             fig, ax = plt.subplots(figsize=(12, 6))
             ax.plot(
@@ -306,6 +326,246 @@ elif model_type == "🧬 SEIR Model":
 
             with st.expander("📋 View Data Preview"):
                 st.dataframe(df.tail(10))
+
+# ============================================================================
+# SEIRD MODEL
+# ============================================================================
+elif model_type == "⚰️ SEIRD Model":
+    st.markdown("## ⚰️ SEIRD Model Simulation (with Mortality)")
+    st.markdown(
+        "🟢 **Susceptible** → 🟡 **Exposed** → 🔴 **Infected** → 🔵 **Recovered** / ⚫ **Deceased**"
+    )
+    st.markdown("---")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("### 🦠 Disease Parameters")
+        beta = st.slider("📈 Infection Rate (β)", 0.0, 1.0, 0.5, 0.01, key="seird_beta")
+        sigma = st.slider(
+            "⏱️ Incubation Rate (σ)",
+            0.01,
+            1.0,
+            0.2,
+            0.01,
+            key="seird_sigma",
+            help="Rate at which exposed become infectious (1/incubation period)",
+        )
+        gamma = st.slider(
+            "💊 Recovery Rate (γ)", 0.01, 1.0, 0.1, 0.01, key="seird_gamma"
+        )
+        mu = st.slider(
+            "⚫ Mortality Rate (μ)",
+            0.0,
+            0.2,
+            0.02,
+            0.005,
+            key="seird_mu",
+            help="Rate of disease-induced mortality among infected individuals",
+        )
+
+        st.markdown("### 👥 Population Parameters")
+        S0 = st.number_input("🟢 Initial Susceptible", 0, 10000, 980, key="seird_s0")
+
+    with col2:
+        st.markdown("### 🧑‍🤝‍🧑 Initial Conditions")
+        E0 = st.number_input("🟡 Initial Exposed", 0, 1000, 10, key="seird_e0")
+        I0 = st.number_input("🔴 Initial Infected", 0, 1000, 10, key="seird_i0")
+        t_max = st.slider("📅 Time Range (days)", 10, 500, 100, key="seird_tmax")
+        steps = st.slider("🔢 Number of Steps", 100, 2000, 500, key="seird_steps")
+
+        r0_val = beta / (gamma + mu) if (gamma + mu) > 0 else 0
+        cfr_val = (mu / (gamma + mu) * 100) if (gamma + mu) > 0 else 0
+        st.metric("📊 Basic Reproduction Number (R₀)", f"{r0_val:.2f}")
+        st.metric("🩺 Case Fatality Rate (CFR)", f"{cfr_val:.1f}%")
+
+    if st.button("⚰️ Run SEIRD Simulation", type="primary", use_container_width=True):
+        with st.spinner("🔄 Running simulation..."):
+            df = cached_seird_simulation(
+                beta, sigma, gamma, mu, S0, E0, I0, 0, 0, t_max, steps
+            )
+
+            fig, ax = plt.subplots(figsize=(12, 6))
+            ax.plot(
+                df["time"],
+                df["Susceptible"],
+                label="🟢 Susceptible",
+                color="#2ecc71",
+                linewidth=2,
+            )
+            ax.plot(
+                df["time"],
+                df["Exposed"],
+                label="🟡 Exposed",
+                color="#f39c12",
+                linewidth=2,
+            )
+            ax.plot(
+                df["time"],
+                df["Infected"],
+                label="🔴 Infected",
+                color="#e74c3c",
+                linewidth=2,
+            )
+            ax.plot(
+                df["time"],
+                df["Recovered"],
+                label="🔵 Recovered",
+                color="#3498db",
+                linewidth=2,
+            )
+            ax.plot(
+                df["time"],
+                df["Deceased"],
+                label="⚫ Deceased",
+                color="#2c3e50",
+                linewidth=2.5,
+                linestyle="--",
+            )
+            ax.fill_between(df["time"], 0, df["Infected"], alpha=0.15, color="#e74c3c")
+            ax.set_xlabel("📅 Time (days)", fontsize=12)
+            ax.set_ylabel("👥 Population", fontsize=12)
+            ax.set_title(
+                "⚰️ SEIRD Epidemic Model Dynamics (with Mortality)",
+                fontsize=14,
+                fontweight="bold",
+            )
+            ax.legend(loc="upper right", fontsize=11)
+            ax.grid(True, alpha=0.3)
+            ax.set_facecolor("#f8f9fa")
+            st.pyplot(fig)
+
+            st.markdown("### 📊 Key Metrics")
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("🔴 Peak Infected", f"{int(df['Infected'].max()):,}")
+            with col2:
+                st.metric("🟡 Peak Exposed", f"{int(df['Exposed'].max()):,}")
+            with col3:
+                st.metric("⚫ Total Deceased", f"{int(df['Deceased'].iloc[-1]):,}")
+            with col4:
+                st.metric("📈 R₀", f"{r0_val:.2f}")
+
+            with st.expander("📋 View Data Preview"):
+                st.dataframe(df.tail(10))
+                csv = df.to_csv(index=False)
+                st.download_button(
+                    "💾 Download CSV", csv, "seird_output.csv", "text/csv"
+                )
+
+# ============================================================================
+# SIRS MODEL
+# ============================================================================
+elif model_type == "🔄 SIRS Model":
+    st.markdown("## 🔄 SIRS Model Simulation (Waning Immunity)")
+    st.markdown(
+        "🟢 **Susceptible** → 🔴 **Infected** → 🔵 **Recovered** → 🟢 **Susceptible (Loss of Immunity)**"
+    )
+    st.markdown("---")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("### 🦠 Disease Parameters")
+        beta = st.slider("📈 Infection Rate (β)", 0.0, 1.0, 0.4, 0.01, key="sirs_beta")
+        gamma = st.slider(
+            "💊 Recovery Rate (γ)", 0.01, 1.0, 0.1, 0.01, key="sirs_gamma"
+        )
+        immunity_days = st.slider(
+            "⏳ Average Immunity Duration (days)",
+            20,
+            365,
+            60,
+            5,
+            help="Average time before recovered individuals lose immunity and become susceptible again",
+        )
+        xi = 1.0 / immunity_days
+
+        st.markdown("### 👥 Population Parameters")
+        S0 = st.number_input("🟢 Initial Susceptible", 0, 10000, 990, key="sirs_s0")
+
+    with col2:
+        st.markdown("### 🧑‍🤝‍🧑 Initial Conditions & Timing")
+        I0 = st.number_input("🔴 Initial Infected", 0, 1000, 10, key="sirs_i0")
+        R0 = st.number_input("🔵 Initial Recovered", 0, 1000, 0, key="sirs_r0")
+        t_max = st.slider(
+            "📅 Time Range (days)",
+            50,
+            1000,
+            250,
+            help="Longer time horizons allow observing endemic steady states",
+            key="sirs_tmax",
+        )
+        steps = st.slider("🔢 Number of Steps", 100, 3000, 1000, key="sirs_steps")
+
+        r0_val = beta / gamma if gamma > 0 else 0
+        st.metric(
+            "📊 Basic Reproduction Number (R₀)",
+            f"{r0_val:.2f}",
+            delta="Endemic persistence" if r0_val > 1 else "Extinction",
+            delta_color="inverse" if r0_val > 1 else "off",
+        )
+
+    if st.button("🔄 Run SIRS Simulation", type="primary", use_container_width=True):
+        with st.spinner("🔄 Running simulation..."):
+            df = cached_sirs_simulation(beta, gamma, xi, S0, I0, R0, t_max, steps)
+
+            fig, ax = plt.subplots(figsize=(12, 6))
+            ax.plot(
+                df["time"],
+                df["Susceptible"],
+                label="🟢 Susceptible",
+                color="#2ecc71",
+                linewidth=2,
+            )
+            ax.plot(
+                df["time"],
+                df["Infected"],
+                label="🔴 Infected",
+                color="#e74c3c",
+                linewidth=2,
+            )
+            ax.plot(
+                df["time"],
+                df["Recovered"],
+                label="🔵 Recovered",
+                color="#3498db",
+                linewidth=2,
+            )
+            ax.fill_between(df["time"], 0, df["Infected"], alpha=0.15, color="#e74c3c")
+            ax.set_xlabel("📅 Time (days)", fontsize=12)
+            ax.set_ylabel("👥 Population", fontsize=12)
+            ax.set_title(
+                "🔄 SIRS Epidemic Dynamics (Oscillations & Endemic Equilibrium)",
+                fontsize=14,
+                fontweight="bold",
+            )
+            ax.legend(loc="upper right", fontsize=11)
+            ax.grid(True, alpha=0.3)
+            ax.set_facecolor("#f8f9fa")
+            st.pyplot(fig)
+
+            st.markdown("### 📊 Key Metrics")
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("🔴 Peak Infected", f"{int(df['Infected'].max()):,}")
+            with col2:
+                st.metric(
+                    "🔴 Endemic Infected (End)", f"{int(df['Infected'].iloc[-1]):,}"
+                )
+            with col3:
+                st.metric(
+                    "🟢 Endemic Susceptible", f"{int(df['Susceptible'].iloc[-1]):,}"
+                )
+            with col4:
+                st.metric("📈 R₀", f"{r0_val:.2f}")
+
+            with st.expander("📋 View Data Preview"):
+                st.dataframe(df.tail(10))
+                csv = df.to_csv(index=False)
+                st.download_button(
+                    "💾 Download CSV", csv, "sirs_output.csv", "text/csv"
+                )
 
 # ============================================================================
 # NETWORK SIMULATION

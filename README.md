@@ -28,7 +28,7 @@ Advanced Open Source SIR Epidemic Simulator
 [![Streamlit](https://img.shields.io/badge/streamlit-app-red)](https://streamlit.io)
 [![Platform](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey)]()
 
-**A Complete Epidemic Modeling Suite with 6 Integrated Features**
+**A Complete Epidemic Modeling Suite with 8 Integrated Features**
 
 ---
 
@@ -38,6 +38,7 @@ Advanced Open Source SIR Epidemic Simulator
 - [Features](#-features)
 - [Installation](#-installation)
 - [Quick Start](#-quick-start)
+- [Docker Deployment](#-docker-deployment)
 - [Documentation](#-documentation)
 - [Project Structure](#-project-structure)
 - [Usage Guide](#-usage-guide)
@@ -71,9 +72,11 @@ The **SIR Epidemic Simulator** is a comprehensive epidemic modeling toolkit comb
 |:---|:---|
 | 📈 **SIR Model** | Basic Susceptible-Infected-Recovered dynamics |
 | 🧬 **SEIR Model** | Adds Exposed/incubation compartment |
+| ⚰️ **SEIRD Model** | Incorporates disease-induced mortality dynamics |
+| 🔄 **SIRS Model** | Models waning immunity and recurrent endemic cycles |
 | 🌐 **Network Simulation** | Fake news spread on social graphs |
-| 🎯 **Parameter Optimization** | Fit models to real-world data |
-| 🤖 **ML Prediction** | Forecast future cases with XGBoost/Random Forest |
+| 🎯 **Parameter Optimization** | Fit models to real-world data (Differential Evolution) |
+| 🤖 **ML Prediction** | Forecast future cases with XGBoost / Random Forest |
 | ⚖️ **Scenario Comparison** | Evaluate quarantine vs vaccination |
 
 ---
@@ -83,6 +86,8 @@ The **SIR Epidemic Simulator** is a comprehensive epidemic modeling toolkit comb
 ### Core Models
 - ✅ SIR model with ODE solver
 - ✅ SEIR model with exposed compartment
+- ✅ SEIRD model with disease mortality dynamics
+- ✅ SIRS model with waning immunity and endemic equilibrium
 - ✅ Population conservation verification
 - ✅ Configurable simulation parameters
 
@@ -100,15 +105,16 @@ The **SIR Epidemic Simulator** is a comprehensive epidemic modeling toolkit comb
 - ✅ Scenario comparison (Baseline, Quarantine, Vaccination, Combined)
 
 ### User Interface
-- ✅ Streamlit web dashboard
-- ✅ Command-line interface (CLI)
+- ✅ Streamlit web dashboard with performance caching (`@st.cache_data`)
+- ✅ Command-line interface (CLI) with support for all models
 - ✅ Interactive menu system
 - ✅ CSV export functionality
 
-### Testing & Security
-- ✅ 35+ unit tests
-- ✅ 22 security tests (DoS, Memory, Unicode, XSS)
-- ✅ GitHub Actions CI/CD
+### Deployment & Testing
+- ✅ Docker & Docker Compose containerization
+- ✅ 45+ unit tests
+- ✅ 25+ security & input validation tests
+- ✅ GitHub Actions CI/CD (Python 3.8, 3.9, 3.10, 3.11)
 - ✅ Pre-commit hooks for code quality
 
 ---
@@ -167,7 +173,25 @@ python main.py
 
 ```bash
 python run_all_tests.py
-python -m unittest discover tests/security
+```
+
+---
+
+## 🐳 Docker Deployment
+
+Run the complete simulator with a single command using Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+Then access the Streamlit dashboard at `http://localhost:8501`.
+
+Or build and run manually with Docker:
+
+```bash
+docker build -t sir-simulator .
+docker run -p 8501:8501 sir-simulator
 ```
 
 ---

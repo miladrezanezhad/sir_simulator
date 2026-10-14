@@ -13,6 +13,8 @@ def seir_equations(y, t, beta, sigma, gamma):
     """SEIR differential equations"""
     S, E, I, R = y
     N = S + E + I + R
+    if N <= 0:
+        return [0.0, 0.0, 0.0, 0.0]
     dSdt = -beta * S * I / N
     dEdt = beta * S * I / N - sigma * E
     dIdt = sigma * E - gamma * I

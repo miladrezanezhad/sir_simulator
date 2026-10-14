@@ -14,7 +14,9 @@ from sir_simulator.advanced_features.parameter_optimization import ParameterOpti
 from sir_simulator.advanced_features.scenario_comparison import ScenarioComparator
 from sir_simulator.core_models.network_model import SocialNetworkSimulator
 from sir_simulator.core_models.seir_model import run_seir_simulation
+from sir_simulator.core_models.seird_model import run_seird_simulation
 from sir_simulator.core_models.sir_model import run_sir_simulation
+from sir_simulator.core_models.sirs_model import run_sirs_simulation
 
 
 def print_menu():
@@ -28,11 +30,13 @@ def print_menu():
     print("")
     print("   1. Run SIR Model")
     print("   2. Run SEIR Model")
-    print("   3. Run Network Simulation")
-    print("   4. Parameter Optimization")
-    print("   5. ML Prediction")
-    print("   6. Scenario Comparison")
-    print("   7. Run All Tests")
+    print("   3. Run SEIRD Model (with Mortality)")
+    print("   4. Run SIRS Model (Waning Immunity)")
+    print("   5. Run Network Simulation")
+    print("   6. Parameter Optimization")
+    print("   7. ML Prediction")
+    print("   8. Scenario Comparison")
+    print("   9. Run All Tests")
     print("   0. Exit")
     print("")
     print("   " + "-" * 40)
@@ -107,6 +111,87 @@ def run_seir():
         save = input("\nSave to CSV? (y/n): ").lower()
         if save == "y":
             filename = input("   Filename [seir_output.csv]: ") or "seir_output.csv"
+            df.to_csv(filename, index=False)
+            print(f"\n[SUCCESS] Saved to {filename}")
+
+    except Exception as e:
+        print(f"\n[ERROR] {e}")
+
+
+def run_seird():
+    """Run SEIRD model simulation (with mortality)"""
+    print("\n" + "=" * 50)
+    print("SEIRD MODEL SIMULATION (WITH MORTALITY)")
+    print("=" * 50)
+
+    try:
+        print("\nEnter simulation parameters:")
+        beta = float(input("   Infection rate (β) [0.5]: ") or 0.5)
+        sigma = float(input("   Incubation rate (σ) [0.2]: ") or 0.2)
+        gamma = float(input("   Recovery rate (γ) [0.1]: ") or 0.1)
+        mu = float(input("   Mortality rate (μ) [0.02]: ") or 0.02)
+        S0 = int(input("   Initial susceptible [980]: ") or 980)
+        E0 = int(input("   Initial exposed [10]: ") or 10)
+        I0 = int(input("   Initial infected [10]: ") or 10)
+        t_max = int(input("   Time range (days) [100]: ") or 100)
+
+        print("\nRunning simulation...")
+        df = run_seird_simulation(beta, sigma, gamma, mu, S0, E0, I0, 0, 0, t_max)
+
+        r0 = beta / (gamma + mu) if (gamma + mu) > 0 else 0
+        print("\n[SUCCESS] Simulation complete!")
+        print("\nRESULTS:")
+        print("-" * 30)
+        print(f"   Peak infected: {int(df['Infected'].max())}")
+        print(f"   Peak exposed: {int(df['Exposed'].max())}")
+        print(f"   Total deceased: {int(df['Deceased'].iloc[-1])}")
+        print(f"   Final susceptible: {int(df['Susceptible'].iloc[-1])}")
+        print(f"   Final recovered: {int(df['Recovered'].iloc[-1])}")
+        print(f"   R0 value: {r0:.2f}")
+        print("-" * 30)
+
+        save = input("\nSave to CSV? (y/n): ").lower()
+        if save == "y":
+            filename = input("   Filename [seird_output.csv]: ") or "seird_output.csv"
+            df.to_csv(filename, index=False)
+            print(f"\n[SUCCESS] Saved to {filename}")
+
+    except Exception as e:
+        print(f"\n[ERROR] {e}")
+
+
+def run_sirs():
+    """Run SIRS model simulation (waning immunity)"""
+    print("\n" + "=" * 50)
+    print("SIRS MODEL SIMULATION (WANING IMMUNITY)")
+    print("=" * 50)
+
+    try:
+        print("\nEnter simulation parameters:")
+        beta = float(input("   Infection rate (β) [0.4]: ") or 0.4)
+        gamma = float(input("   Recovery rate (γ) [0.1]: ") or 0.1)
+        immunity_days = float(input("   Avg immunity duration (days) [60]: ") or 60)
+        xi = 1.0 / immunity_days if immunity_days > 0 else 0.02
+        S0 = int(input("   Initial susceptible [990]: ") or 990)
+        I0 = int(input("   Initial infected [10]: ") or 10)
+        t_max = int(input("   Time range (days) [200]: ") or 200)
+
+        print("\nRunning simulation...")
+        df = run_sirs_simulation(beta, gamma, xi, S0, I0, 0, t_max)
+
+        r0 = beta / gamma if gamma > 0 else 0
+        print("\n[SUCCESS] Simulation complete!")
+        print("\nRESULTS:")
+        print("-" * 30)
+        print(f"   Peak infected: {int(df['Infected'].max())}")
+        print(f"   Endemic infected (final): {int(df['Infected'].iloc[-1])}")
+        print(f"   Endemic susceptible (final): {int(df['Susceptible'].iloc[-1])}")
+        print(f"   R0 value: {r0:.2f}")
+        print("-" * 30)
+
+        save = input("\nSave to CSV? (y/n): ").lower()
+        if save == "y":
+            filename = input("   Filename [sirs_output.csv]: ") or "sirs_output.csv"
             df.to_csv(filename, index=False)
             print(f"\n[SUCCESS] Saved to {filename}")
 
@@ -325,21 +410,25 @@ def main():
 
     while True:
         print_menu()
-        choice = input("\nEnter your choice (0-7): ")
+        choice = input("\nEnter your choice (0-9): ")
 
         if choice == "1":
             run_sir()
         elif choice == "2":
             run_seir()
         elif choice == "3":
-            run_network()
+            run_seird()
         elif choice == "4":
-            run_optimization()
+            run_sirs()
         elif choice == "5":
-            run_ml()
+            run_network()
         elif choice == "6":
-            run_scenarios()
+            run_optimization()
         elif choice == "7":
+            run_ml()
+        elif choice == "8":
+            run_scenarios()
+        elif choice == "9":
             run_tests()
         elif choice == "0":
             print("\n" + "=" * 40)
@@ -348,7 +437,7 @@ def main():
             print("=" * 40)
             break
         else:
-            print("\n[ERROR] Invalid choice! Please enter a number between 0 and 7.")
+            print("\n[ERROR] Invalid choice! Please enter a number between 0 and 9.")
 
         input("\nPress Enter to continue...")
 
